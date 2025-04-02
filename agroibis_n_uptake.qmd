@@ -1,0 +1,58 @@
+---
+title: "Agro-IBIS: Plant N Uptake"
+author: "Bryan Petersen"
+date: "2025-04-03"
+
+---
+
+## Equation Overview
+The equation for plant N uptake for a given soil layer, k, and location, i, is the following:  
+
+$$\mathrm{tnuptake(i,k) = max(alphac \times stressl(i,k), wsupply) \times availn \times [smsoil(i,k) + smsoln(i,k)]}$${#eq-tnuptake}
+
+where:  
+ - $\mathrm{tnuptake(i,k)}$ is the total N uptake by plants in the soil layer, k, and location, i.  
+ - $\mathrm{alphac}$ is the minimum N uptake rate in low soil moisture conditions.  
+ - $\mathrm{stressl(i,k)}$ is soil moisture stress factor for the lower canopy for each soil layer, k, and location, i.  
+ - $\mathrm{wsupply}$ is the supply of water to the plant roots a single soil layer.  
+ - $\mathrm{availn}$ is the fraction of inorganic N pool available to plants in a single soil layer. This is set to 1 in params.crp.  
+ - $\mathrm{smsoil(i,k)}$ is immobile inorganic nitrogen (ammonium) in soil in a soil layer, k, and location, i.  
+ - $\mathrm{smsoln(i,k)}$ is mobile inorganic nitrogen (nitrate) in soil in a soil layer, k, and location, i.  
+ 
+## Unit Analysis  
+ Based on the documentation alone, the units for the variables in the equation are as follows:  
+ - $\mathrm{tnuptake(i,k)}$ is in $\mathrm{kg\,N\,d^{-1}}$  
+ - $\mathrm{alphac}$ is in $\mathrm{mm\,\,d^{-1}}$  
+ - $\mathrm{stressl(i,k)}$ is unitless  
+ - $\mathrm{wsupply}$ is in $\mathrm{kg \, H_{2}O \, m^{-2} \, s^{-1}}$  
+ - $\mathrm{availn}$ is unitless  
+ - $\mathrm{smsoil(i,k)}$ is in $\mathrm{kg \, solute \, m^{-2}}$  
+ - $\mathrm{smsoln(i,k)}$ is in $\mathrm{kg \, solute \, m^{-2}}$  
+ 
+I will assume that the units of $\mathrm{tnuptake(i,k)}$ should be $\mathrm{kg\,N\,m^{-2}\,d^{-1}}$.  
+
+Before $\mathrm{wsupply}$ is used in @eq-tnuptake, it is multiplied by $\mathrm{dtime}$, which is the number of seconds in a day. This converts $\mathrm{wsupply}$ to $\mathrm{kg \, H_{2}O \, m^{-2} \, d^{-1}}$.  
+
+I will also assume that solute in $\mathrm{smsoil(i,k)}$ and $\mathrm{smsoln(i,k)}$ is represented by $\mathrm{kg \, N}$ in $\mathrm{NH_{4}^{+}}$ and $\mathrm{NO_{3}^{-}}$, respectively.
+
+Assuming $\mathrm{wsupply}$ is larger than $\mathrm{alphac \times stressl(i,k)}$ and evaluating the units on the right side of @eq-tnuptake, we have:  
+$$\mathrm{kg \, H_{2}O \, m^{-2} \, d^{-1} \times (kg \, N \, m^{-2} + kg \, N \, m^{-2})}$${#eq-tnuptake-units}
+
+This simplifies to:
+$$\mathrm{kg^{2} \, H_{2}O \times N \, m^{-4}}$${#eq-tnuptake-units-simplified}
+
+In order for the units to be consistent with $\mathrm{tnuptake(i,k)}$, the units of $\mathrm{smoil(i,k)}$ and $\mathrm{smsoln(i,k)}$ must be $\mathrm{kg \, N \, kg^{-1} \, H_{2}O}$. 
+
+## Calculating smsoil
+$\mathrm{smsoil(i,k)}$ is initialized in solute.f using the following equation:
+
+$$\mathrm{smsoil(i,k) = co \times \frac{snode(k)}{cndepth}}$${#eq-smsoil}
+
+where:  
+ - $\mathrm{co \: [kg \, solute \, m^{-2}]}$ is the initial total solute mass for the soil profile.  
+ - $\mathrm{snode(k) \: [m]}$ is the average soil layer depth for $\mathrm{k^{th}}$ soil layer.  
+ - $\mathrm{cndepth \: [m]}$ is the average depth of bottom soil layer.  
+ 
+Based on the documented units for the variables in @eq-smsoil, the units for $\mathrm{smsoil(i,k)}$ should be $\mathrm{kg \, solute \, m^{-2}}$, and not $\mathrm{kg \, N \, kg^{-1} \, H_{2}O}$. This is inconsistent with the units required for the calculation of $\mathrm{tnuptake(i,k)}$ in @eq-tnuptake.
+ 
+
