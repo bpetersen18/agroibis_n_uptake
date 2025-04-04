@@ -1,12 +1,14 @@
 ---
-title: "Agro-IBIS: Plant N Uptake"
+title: "Agro-IBIS VSF: Plant N Uptake"
 author: "Bryan Petersen"
 date: "2025-04-03"
-
+format:
+  html:
+    code-fold: true
 ---
 
 ## Equation Overview
-The equation for plant N uptake for a given soil layer, k, and location, i, is the following:  
+The equation for potential plant N uptake for a given soil layer, k, and location, i, is the following:  
 
 $$\mathrm{tnuptake(i,k) = max(alphac \times stressl(i,k), wsupply) \times availn \times [smsoil(i,k) + smsoln(i,k)]}$${#eq-tnuptake}
 
@@ -21,7 +23,7 @@ where:
  
 ## Unit Analysis  
  Based on the documentation alone, the units for the variables in the equation are as follows:  
- - $\mathrm{tnuptake(i,k)}$ is in $\mathrm{kg\,N\,d^{-1}}$  
+ - $\mathrm{tnuptake(i,k)}$ is in $\mathrm{kg\,N\,hr^{-1}}$  
  - $\mathrm{alphac}$ is in $\mathrm{mm\,\,d^{-1}}$  
  - $\mathrm{stressl(i,k)}$ is unitless  
  - $\mathrm{wsupply}$ is in $\mathrm{kg \, H_{2}O \, m^{-2} \, s^{-1}}$  
@@ -29,19 +31,19 @@ where:
  - $\mathrm{smsoil(i,k)}$ is in $\mathrm{kg \, solute \, m^{-2}}$  
  - $\mathrm{smsoln(i,k)}$ is in $\mathrm{kg \, solute \, m^{-2}}$  
  
-I will assume that the units of $\mathrm{tnuptake(i,k)}$ should be $\mathrm{kg\,N\,m^{-2}\,d^{-1}}$.  
+I will assume that the units of $\mathrm{tnuptake(i,k)}$ should be $\mathrm{kg\,N\,m^{-2}\,hr^{-1}}$.  
 
-Before $\mathrm{wsupply}$ is used in @eq-tnuptake, it is multiplied by $\mathrm{dtime}$, which is the number of seconds in a day. This converts $\mathrm{wsupply}$ to $\mathrm{kg \, H_{2}O \, m^{-2} \, d^{-1}}$.  
+Before $\mathrm{wsupply}$ is used in @eq-tnuptake, it is multiplied by $\mathrm{dtime}$, which is the number of seconds in a hour. This converts $\mathrm{wsupply}$ to $\mathrm{kg \, H_{2}O \, m^{-2} \, hr^{-1}}$.  
 
 I will also assume that solute in $\mathrm{smsoil(i,k)}$ and $\mathrm{smsoln(i,k)}$ is represented by $\mathrm{kg \, N}$ in $\mathrm{NH_{4}^{+}}$ and $\mathrm{NO_{3}^{-}}$, respectively.
 
 Assuming $\mathrm{wsupply}$ is larger than $\mathrm{alphac \times stressl(i,k)}$ and evaluating the units on the right side of @eq-tnuptake, we have:  
-$$\mathrm{kg \, H_{2}O \, m^{-2} \, d^{-1} \times (kg \, N \, m^{-2} + kg \, N \, m^{-2})}$${#eq-tnuptake-units}
+$$\mathrm{kg \, H_{2}O \, m^{-2} \, hr^{-1} \times (kg \, N \, m^{-2} + kg \, N \, m^{-2})}$${#eq-tnuptake-units}
 
 This simplifies to:
-$$\mathrm{kg^{2} \, H_{2}O \times N \, m^{-4}}$${#eq-tnuptake-units-simplified}
+$$\mathrm{kg^{2} \, H_{2}O \times N \, m^{-4} \, hr^{-1}}$${#eq-tnuptake-units-simplified}
 
-In order for the units to be consistent with $\mathrm{tnuptake(i,k)}$, the units of $\mathrm{smoil(i,k)}$ and $\mathrm{smsoln(i,k)}$ must be $\mathrm{kg \, N \, kg^{-1} \, H_{2}O}$. 
+In order for the units to be consistent with $\mathrm{tnuptake(i,k)}$, the units of $\mathrm{smsoil(i,k)}$ and $\mathrm{smsoln(i,k)}$ must be $\mathrm{kg \, N \, kg^{-1} \, H_{2}O}$. 
 
 ## Calculating smsoil
 $\mathrm{smsoil(i,k)}$ is initialized in solute.f using the following equation:
@@ -55,4 +57,100 @@ where:
  
 Based on the documented units for the variables in @eq-smsoil, the units for $\mathrm{smsoil(i,k)}$ should be $\mathrm{kg \, solute \, m^{-2}}$, and not $\mathrm{kg \, N \, kg^{-1} \, H_{2}O}$. This is inconsistent with the units required for the calculation of $\mathrm{tnuptake(i,k)}$ in @eq-tnuptake.
  
+## Magnitude of Variables
+In a corn simulation using Agro-IBIS VSF, the annual plant N uptake supply was $\mathrm{1.5 \times 10^{-2}\, kg \, N \, m^{-2}}$ while the actual annual plant N uptake was $\mathrm{1.4 \times 10^{-2}\, kg \, N \, m^{-2}}$. Abendroth et al. (2011) reports that average annual corn N uptake is $\mathrm{200 \, lb \, N \, ac^{-1}}$, which is equivalent to $\mathrm{2.2 \times 10^{-2} \, kg \, N \, m^{-2}}$. This is consistent with the values from the Agro-IBIS VSF simulation.
+
+```{r, message=FALSE, warning=FALSE}
+#| fig-cap: "Simulated mobile and immobile inorganic N under first year corn crop."
+library(tidyverse)
+library(lubridate)
+library(data.table)
+library(gganimate)
+
+# Define soil layer depths (in meters)
+layer_depths <- c(
+  0.00500, 0.01192, 0.02076, 0.03152, 0.04419, 0.05879, 0.07530, 0.09374, 0.11409, 0.13636,
+  0.16056, 0.18667, 0.21470, 0.24465, 0.27652, 0.31030, 0.34601, 0.38364, 0.42318, 0.46465,
+  0.50803, 0.55333, 0.60056, 0.64970, 0.70076, 0.75374, 0.80864, 0.86545, 0.92419, 0.98485,
+  1.04742, 1.11192, 1.17833, 1.24667, 1.31692, 1.38909, 1.46318, 1.53919, 1.61712, 1.69697,
+  1.77874, 1.86242, 1.94803, 2.03556, 2.12500, 2.21636, 2.30965, 2.40485, 2.50197, 2.60101,
+  2.70197, 2.80485, 2.90965, 3.01636, 3.12500, 3.23556, 3.34803, 3.46242, 3.57874, 3.69697,
+  3.81712, 3.93919, 4.06318, 4.18909, 4.31692, 4.44667, 4.57833, 4.71192, 4.84742, 4.98485,
+  5.12419, 5.26546, 5.40864, 5.55374, 5.70076, 5.84970, 6.00056, 6.15333, 6.30803, 6.46465,
+  6.62318, 6.78364, 6.94601, 7.11030, 7.27652, 7.44465, 7.61470, 7.78667, 7.96056, 8.13636,
+  8.31409, 8.49374, 8.67530, 8.85879, 9.04419, 9.23152, 9.42076, 9.61192, 9.80500, 10.00000
+)
+
+parse_soil_data <- function(file_path) {
+  # Read file quickly with data.table
+  content <- fread(file_path, sep = NULL, header = FALSE, fill = TRUE)[[1]]
+  
+  # Find all date lines and extract dates
+  date_lines <- str_which(content, "starting - year/month/day: \\d{4}/\\s?\\d{1,2}/\\s?\\d{1,2}")
+  dates <- ymd(str_extract(content[date_lines], "\\d{4}/\\s?\\d{1,2}/\\s?\\d{1,2}") %>% 
+    str_replace_all("/", "-"))
+  
+  # Find all soil data blocks (each block has 3 lines: layer, smsoil, smsoln)
+  soil_starts <- str_which(content, "^soil layer:")
+  
+  
+  # Pre-allocate results data.table
+  result <- data.table(
+    date = as.Date(rep(NA, length(soil_starts))),
+    layer = integer(length(soil_starts)),
+    depth = numeric(length(soil_starts)),
+    smsoil = numeric(length(soil_starts)),
+    smsoln = numeric(length(soil_starts))
+  )
+  
+  # Map each soil reading to its corresponding date
+  date_indices <- findInterval(soil_starts, date_lines)
+  
+  # Process soil data
+  result[, `:=`(
+    date = dates[date_indices],
+    layer = as.integer(str_extract(content[soil_starts], "\\d+")),
+    depth = layer_depths[as.integer(str_extract(content[soil_starts], "\\d+"))],
+    smsoil = as.numeric(str_extract(content[soil_starts + 1], "[0-9.E+-]+")),
+    smsoln = as.numeric(str_extract(content[soil_starts + 2], "[0-9.E+-]+"))
+  )]
+  
+  # Remove any NA rows
+  result <- result[complete.cases(result)]
+  
+  return(as_tibble(result))
+}
+
+# Parse the raw data
+soil_data <- parse_soil_data("data/sabr_corn.txt")
+
+# Average the data by date and layer
+daily_soil_data <- soil_data %>%
+  pivot_longer(cols = c(smsoil, smsoln), names_to = "n_type", values_to = "value") %>%
+  group_by(date, depth, n_type) %>%
+  summarise(value = mean(value)) %>%
+  ungroup()
+
+
+# Plot the smsoln and smsoil profile data and animate it
+soil_n_gif <- daily_soil_data %>%
+  filter(year(date) == 2019) %>%
+  ggplot(aes(x = value, y = depth)) +
+  geom_path() +
+  facet_wrap(~ n_type, ncol = 2, scales = "free_x") +
+  scale_y_reverse() +
+  scale_x_log10() +
+  theme_bw() +
+  labs(y = "Depth (m)", x = "Value", title = "Immobile and Mobile Inorganic N on {frame_time}") +
+  transition_time(date) +
+  ease_aes('linear')
+
+# Save the animation
+anim_save("soil_n.gif", animate(soil_n_gif, renderer = gifski_renderer()))
+
+knitr::include_graphics("soil_n.gif")
+```
+
+
+In the top soil layer on May 7th, the mobile and immobile nitrogen pools were $\mathrm{3.4 \times 10^{-5}}$ and $\mathrm{5.6 \times 10^{-4}}$, respectively. If these numbers were concentrations, they would 34 ppm and 560 ppm, respectively. The mobile N pool is on the same order of magnitude as values shown in this Iowa State University Extension article (https://crops.extension.iastate.edu/cropnews/2022/06/using-late-spring-soil-nitrate-test-2022).
 
